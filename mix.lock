@@ -1,0 +1,2 @@
+%{"hash_ring_ex": {:hex, :hash_ring_ex, "1.1.2"},
+  "phoenix_pubsub": {:git, "https://github.com/phoenixframework/phoenix_pubsub.git", "5b14a2e0f2d6408c3b803210c5b38f137da71e47", []}}
