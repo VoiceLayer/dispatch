@@ -6,7 +6,7 @@ defmodule Dispatch.Supervisor do
   end
 
   def init(:ok) do
-    children = if Mix.env == :test do
+    children = if Application.get_env(:dispatch, :test) do
       children = [
           worker(HashRing, [])
         ]
