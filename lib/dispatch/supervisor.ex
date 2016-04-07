@@ -6,14 +6,22 @@ defmodule Dispatch.Supervisor do
   end
 
   def init(:ok) do
-    pubsub = Application.get_env(:phoenix_pubsub, :pubsub)
-    children = [
-        worker(HashRing, [])
-      ]
+    children = if Mix.env == :test do
+      children = [
+          worker(HashRing, [])
+        ]
 
-    opts = [strategy: :one_for_one]
-    Supervisor.start_link(children, opts)
-    supervise([worker(HashRing, [])], strategy: :simple_one_for_one)
+      supervise(children, strategy: :simple_one_for_one)
+    else
+      registry_name = Application.get_env(:dispatch, :registry)
+      hashring_name = Application.get_env(:dispatch, :hashring)
+      children = [
+          worker(Dispatch.Registry, [[name: registry_name]]),
+          worker(HashRing, [[name: hashring_name]])
+        ]
+
+      supervise(children, strategy: :one_for_one)
+    end    
   end
 
   def start_hash_ring(supervisor, param) do

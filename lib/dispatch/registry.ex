@@ -3,16 +3,14 @@ defmodule Dispatch.Registry do
 
   def start_link(opts \\ []) do
     [pubsub_server, pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
-    opts = Keyword.merge([name: __MODULE__, 
+    full_opts = Keyword.merge([name: __MODULE__, 
                           pubsub_server: pubsub_server],
                          opts)
 
-    # this needs to move to a Supervisor
-    GenServer.start_link(Phoenix.Tracker, [__MODULE__, opts, opts], [])
+    GenServer.start_link(Phoenix.Tracker, [__MODULE__, full_opts, full_opts], opts)
   end
 
   def start_service(server, type, pid) do
-    # might need to convert pid to term using :erlang.term_to_binary(pid)
     Phoenix.Tracker.track(server, pid, type, pid, %{node: node(), state: :online})
   end
 
@@ -58,7 +56,6 @@ defmodule Dispatch.Registry do
   end
 
   def handle_diff(diff, state) do
-    # IO.puts "diff = #{inspect diff}, state = #{inspect diff}"
     for {topic, {joins, leaves}} <- diff do
       for {pid, meta} <- joins do
         service_info = {meta.node, pid}
@@ -69,11 +66,9 @@ defmodule Dispatch.Registry do
             HashRing.drop(state.hashring_server, service_info |> :erlang.term_to_binary)
         end
 
-        # IO.puts "presence join: key \"#{inspect key}\" with meta #{inspect meta}"
         Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, topic, {:join, pid, meta})
       end
       for {pid, meta} <- leaves do
-        # IO.puts "presence leave: key \"#{inspect key}\" with meta #{inspect meta}"
         service_info = {meta.node, pid}
         HashRing.drop(state.hashring_server, service_info |> :erlang.term_to_binary)
         Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, topic, {:leave, pid, meta})

@@ -1,26 +1,13 @@
 defmodule Dispatch.ServiceTest do
   use ExUnit.Case, async: false
-  alias Dispatch.{Registry, Service, Client, Supervisor}
-  alias Phoenix.PubSub
+  alias Dispatch.{Service, Client, Helper}
 
   setup do
-    hashring_server = Application.get_env(:dispatch, :hashring)
-    {:ok, hashring_pid} = Supervisor.start_hash_ring(Supervisor, [])
-    Process.register(hashring_pid, hashring_server)
+    ctx = Helper.setup_dispatch()
     on_exit fn ->
-      Supervisor.stop_hash_ring(Supervisor, hashring_pid)
+      Helper.clean_dispatch(ctx)
     end
-
-    type = Application.get_env(:dispatch, :type)
-    [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
-
-    {:ok, registry_pid} = Registry.start_link
-
-    registry_server = Application.get_env(:dispatch, :registry)
-    Process.register(registry_pid, registry_server)
-    PubSub.subscribe(pubsub_server, type)
-
-    {:ok, %{type: type}}
+    {:ok, ctx}
   end
 
   test "invoke service cast", %{type: type} do
