@@ -2,19 +2,20 @@ defmodule Dispatch.Helper do
   import ExUnit.Assertions
   alias Dispatch.{Supervisor, Registry}
 
-  def setup_dispatch() do
+  @rtype "TestDispatchType"
+
+  def setup_dispatch(type \\ @rtype) do
     [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
 
-    type = Application.get_env(:dispatch, :type)
     Phoenix.PubSub.subscribe(pubsub_server, type)
 
     {:ok, hashring_pid} = Supervisor.start_hash_ring(Supervisor, [])
-    hashring_server = Application.get_env(:dispatch, :hashring)
+    hashring_server = Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
     Process.register(hashring_pid, hashring_server)
 
-    registry_server = Application.get_env(:dispatch, :registry)
+    registry_server = Application.get_env(:dispatch, :registry, Dispatch.Registry)
     {:ok, registry_pid} = Registry.start_link
-    if old_pid = Process.whereis(registry_server) do
+    if _old_pid = Process.whereis(registry_server) do
       Process.unregister(registry_server)
     end
     Process.register(registry_pid, registry_server)
@@ -22,7 +23,7 @@ defmodule Dispatch.Helper do
     %{hashring_pid: hashring_pid, registry_pid: registry_pid, hashring: hashring_server, registry_server: registry_server, type: type}
   end
 
-  def clean_dispatch(%{hashring_pid: hashring_pid, registry_pid: registry_pid}) do
+  def clean_dispatch(%{hashring_pid: hashring_pid}) do
     Supervisor.stop_hash_ring(Supervisor, hashring_pid)
   end
 
@@ -34,9 +35,8 @@ defmodule Dispatch.Helper do
     end
   end
 
-  def get_online_services() do
-    registry_server = Application.get_env(:dispatch, :registry)
-    type = Application.get_env(:dispatch, :type)    
+  def get_online_services(type \\ @rtype) do
+    registry_server = Application.get_env(:dispatch, :registry, Dispatch.Registry)
     Registry.get_services(registry_server, type)
   end
 

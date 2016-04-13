@@ -2,11 +2,10 @@ defmodule Dispatch.Registry do
   @behaviour Phoenix.Tracker
 
   def start_link(opts \\ []) do
-    [pubsub_server, pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
+    [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
     full_opts = Keyword.merge([name: __MODULE__, 
                           pubsub_server: pubsub_server],
                          opts)
-
     GenServer.start_link(Phoenix.Tracker, [__MODULE__, full_opts, full_opts], opts)
   end
 
@@ -36,8 +35,9 @@ defmodule Dispatch.Registry do
       |> Enum.filter(&(elem(&1, 1)[:state] == :online))
   end
 
-  def get_service_pid(server, type, key) do
-    case HashRing.find(Dispatch.HashRing, key) do
+  def get_service_pid(_server, _type, key) do
+    hashring_server = Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
+    case HashRing.find(hashring_server, key) do
       {:ok, service_info} ->
         {node, pid} = service_info |> :erlang.binary_to_term
         {:ok, node, pid}
@@ -46,10 +46,12 @@ defmodule Dispatch.Registry do
   end
 
   # Phoenix Tracker Behavior
+  # TODO: Only supporting one type for now.
+  # To support multiple types then multiple hashrings are needed.
 
   def init(opts) do
     server = Keyword.fetch!(opts, :pubsub_server)
-    hashring_server = Application.get_env(:dispatch, :hashring)
+    hashring_server = Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
     {:ok, %{pubsub_server: server, 
             node_name: Phoenix.PubSub.node_name(server),
             hashring_server: hashring_server}}
