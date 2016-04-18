@@ -3,11 +3,14 @@ defmodule Dispatch.ServiceTest do
   alias Dispatch.{Service, Client, Helper}
 
   setup do
-    ctx = Helper.setup_dispatch()
+    type = "TypeForTests"
+    [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
+    Phoenix.PubSub.subscribe(pubsub_server, type)
+    {:ok, _registry_pid} = Helper.setup_registry()
     on_exit fn ->
-      Helper.clean_dispatch(ctx)
+      Helper.clear_type(type)
     end
-    {:ok, ctx}
+    {:ok, %{type: type}}
   end
 
   test "invoke service cast", %{type: type} do
@@ -23,9 +26,9 @@ defmodule Dispatch.ServiceTest do
   test "invoke service call", %{type: type} do
     this_node = node()
 
-    task = Task.async(fn -> 
-      Service.init([type: type]) 
-      receive do 
+    task = Task.async(fn ->
+      Service.init([type: type])
+      receive do
         {:call_request, from, key, params} ->
           Service.reply(from, {key, params})
       end

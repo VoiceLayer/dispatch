@@ -21,7 +21,7 @@ defmodule Dispatch.Cluster do
   defp spawn_node(node_host) do
     slave = case :slave.start(to_char_list("127.0.0.1"), node_name(node_host), inet_loader_args()) do
       {:ok, slave} -> slave
-      other -> 
+      other ->
         IO.puts "error! #{inspect other}"
         nil
     end

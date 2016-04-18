@@ -15,7 +15,7 @@ defmodule Dispatch.Client do
     case Dispatch.Registry.get_service_pid(registry_server, type, key) do
       {:ok, _node, pid} ->
         send pid, {:call_request, self, key, params}
-        receive do 
+        receive do
           {:call_reply, reply} -> {:ok, reply}
           {:error, reason} -> {:error, reason}
         after

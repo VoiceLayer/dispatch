@@ -10,7 +10,7 @@ defmodule Dispatch.Service do
   end
 
   def reply(to, reply) do
-    send to, {:call_reply, reply}    
+    send to, {:call_reply, reply}
   end
 
 end
