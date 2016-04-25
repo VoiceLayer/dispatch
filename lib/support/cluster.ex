@@ -1,5 +1,6 @@
 defmodule Dispatch.Cluster do
   alias Dispatch.Helper
+  alias __MODULE__
   @timeout 5_000
 
   def spawn do
@@ -92,36 +93,9 @@ defmodule Dispatch.Cluster do
     end
   end
 
-  defp start_registry(ets, manager, sup) do
-    {:ok, registry} =MC.Registry.start_link(ets, manager, sup)
-    Helper.wait_dispatch_ready()
-    registry
-  end
-
-  def setup_registry() do
-    Helper.setup_dispatch()
-
-    ets = :ets.new(:registry_table, [:set, :public])
-
-    {:ok, sup} = MC.Handler.Supervisor.start_link
-    {:ok, event_sink} = GenEvent.start_link
-
-    GenEvent.add_mon_handler(event_sink, Forwarder, self())
-    registry = start_registry(ets, event_sink, sup)
-
-    {registry, event_sink, sup, ets}
-  end
-
-
-  def setup_remote_registry() do
-    [node1, node2] = Application.get_env(:phoenix_pubsub, :nodes, [])
-    res1 = call_node(node1, fn ->
-        Dispatch.Cluster.setup_registry()
-      end)
-    res2 = call_node(node2, fn ->
-        Dispatch.Cluster.setup_registry()
-      end)
-    {res1, res2}
+  def setup_remote_registry(func) do
+    Application.get_env(:phoenix_pubsub, :nodes, [])
+    |> Enum.map(&(Cluster.call_node(&1, func)))
   end
 
 end
