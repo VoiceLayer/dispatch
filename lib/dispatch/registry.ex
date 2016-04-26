@@ -172,7 +172,7 @@ defmodule Dispatch.Registry do
 
     case service do
       {host, pid} when is_pid(pid) -> {:ok, host, pid}
-      _ -> {:error}
+      _ -> {:error, :no_service_for_key}
     end
   end
 

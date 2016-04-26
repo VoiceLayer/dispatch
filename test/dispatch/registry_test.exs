@@ -98,7 +98,7 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "get error if no services joined", %{registry_pid: registry_pid, type: type}  do
-    assert {:error} == Registry.get_service_pid(registry_pid, type, "my_key")
+    assert {:error, :no_service_for_key} == Registry.get_service_pid(registry_pid, type, "my_key")
   end
 
   test "get service pid", %{registry_pid: registry_pid, type: type}  do

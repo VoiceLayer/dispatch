@@ -63,7 +63,8 @@ iex> Dispatch.Registry.get_service_pid(Dispatch.Registry, :uploader, "file.png")
 ```
 
 Using `get_service_pid/3` will return a tuple in the form `{:ok, node, pid}` where
-`node` is the node that owns the `pid` that should be used.
+`node` is the node that owns the `pid` that should be used. If no service can be
+found then `{:error, reason}` will be returned.
 
 ## Convenience API
 
