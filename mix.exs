@@ -14,7 +14,7 @@ defmodule Dispatch.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :phoenix_pubsub],
+    [applications: [:logger, :phoenix_pubsub, :hash_ring_ex],
       mod: {Dispatch, []}]
   end
 
