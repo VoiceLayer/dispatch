@@ -18,13 +18,13 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "empty registry returns empty service list with a different type", %{registry_pid: registry_pid, type: type} do
-    Registry.start_service(registry_pid, "Other", self())
+    Registry.add_service(registry_pid, "Other", self())
     assert [] == Registry.get_services(registry_pid, type)
     Helper.clear_type("Other")
   end
 
   test "enable service adds to registry", %{registry_pid: registry_pid, type: type} do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}
 
@@ -37,8 +37,8 @@ defmodule Dispatch.RegistryTest do
   test "enable service allows multiple different types", %{registry_pid: registry_pid} do
     {:ok, service_1} = Agent.start(fn -> 1 end)
     {:ok, service_2} = Agent.start(fn -> 2 end)
-    Registry.start_service(registry_pid, "Type1", service_1)
-    Registry.start_service(registry_pid, "Type2", service_2)
+    Registry.add_service(registry_pid, "Type1", service_1)
+    Registry.add_service(registry_pid, "Type2", service_2)
     this_node = node()
 
     assert {:ok, ^this_node, ^service_1} = Registry.get_service_pid(registry_pid, "Type1", "my_key")
@@ -46,7 +46,7 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "remove service removes it from registry", %{registry_pid: registry_pid, type: type} do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     Registry.remove_service(registry_pid, type, self())
 
     {this_pid, this_node} = {self(), node()}
@@ -57,7 +57,7 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "disable service", %{registry_pid: registry_pid, type: type} do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     Registry.disable_service(registry_pid, type, self())
 
     {this_pid, this_node} = {self(), node()}
@@ -71,9 +71,9 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "enable multiple services", %{registry_pid: registry_pid, type: type} do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     other_pid = spawn(fn -> :timer.sleep(30_000) end)
-    Registry.start_service(registry_pid, type, other_pid)
+    Registry.add_service(registry_pid, type, other_pid)
 
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
@@ -84,7 +84,7 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "get online services", %{registry_pid: registry_pid, type: type}  do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
 
@@ -102,7 +102,7 @@ defmodule Dispatch.RegistryTest do
   end
 
   test "get service pid", %{registry_pid: registry_pid, type: type}  do
-    Registry.start_service(registry_pid, type, self())
+    Registry.add_service(registry_pid, type, self())
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
 

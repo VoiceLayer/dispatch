@@ -37,7 +37,7 @@ supervise each hash ring.
 
 ```elixir
 iex> {:ok, service_pid} = Agent.start_link(fn _ -> 1 end) # Use your real service here
-iex> Dispatch.Registry.start_service(Dispatch.Registry, :uploader, service_pid)
+iex> Dispatch.Registry.add_service(Dispatch.Registry, :uploader, service_pid)
 {:ok, "g20AAAAI9+IQ28ngDfM="}
 ```
 

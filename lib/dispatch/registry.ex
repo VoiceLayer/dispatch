@@ -58,10 +58,10 @@ defmodule Dispatch.Registry do
 
   ## Examples
 
-      iex> Dispatch.Registry.start_service(Dispatch.Registry, :downloader, self())
+      iex> Dispatch.Registry.add_service(Dispatch.Registry, :downloader, self())
       {:ok, "g20AAAAIlB7XfDdRhmk="}
   """
-  def start_service(server, type, pid) do
+  def add_service(server, type, pid) do
     Phoenix.Tracker.track(server, pid, type, pid, %{node: node(), state: :online})
   end
 
