@@ -1,5 +1,4 @@
 defmodule Dispatch.Service do
-
   def init(opts) do
     type = Keyword.fetch!(opts, :type)
     server = Application.get_env(:dispatch, :registry, Dispatch.Registry)
@@ -8,9 +7,4 @@ defmodule Dispatch.Service do
       other -> other
     end
   end
-
-  def reply(to, reply) do
-    send to, {:call_reply, reply}
-  end
-
 end

@@ -81,21 +81,20 @@ pid.
 
 # File is a map with the format %{name: "file.png", contents: "test file"} 
 def upload(file)
-  Dispatch.Client.cast(:uploader, file.name, {:upload, file.contents})
+  Dispatch.Client.cast(:uploader, file.name, {:upload, file})
 end
 
 def download(file)
-  Dispatch.Client.call(:uploader, file.name, {:download, file.contents})
+  Dispatch.Client.call(:uploader, file.name, {:download, file})
 end
 
-def handle_info({:cast_request, key, {:upload, contents}}, state) do
-  Logger.info("Uploading #{key}")
-  {:noreply, Map.put(state, key, contents)}
+def handle_cast({:upload, file}, state) do
+  Logger.info("Uploading #{file.name}")
+  {:noreply, Map.put(state, file.name, file.contents)}
 end
 
-def handle_info({:call_request, from, key, :download}, state) do
-  Logger.info("Downloading #{key}")
-  Dispatch.Service.reply(from, {:ok, Map.get(state, key)})
-  {:noreply, state}
+def handle_call({:download, %{name: name}}, from, state) do
+  Logger.info("Downloading #{name}")
+  {:reply, {:ok, Map.get(state, name}}, state}
 end
 ```

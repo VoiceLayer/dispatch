@@ -2,6 +2,26 @@ defmodule Dispatch.ServiceTest do
   use ExUnit.Case, async: false
   alias Dispatch.{Service, Client, Helper}
 
+  defmodule FakeService do
+    def start_link(opts) do
+      GenServer.start_link(__MODULE__, opts)
+    end
+
+    def init(opts) do
+      :ok = Service.init(opts)
+      {:ok, %{}}
+    end
+
+    def handle_call({:get, key}, _from, state) do
+      {:reply, {:ok, key}, state}
+    end
+
+    def handle_cast({:set, key, from}, state) do
+      send(from, {:set_request, key})
+      {:noreply, state}
+    end
+  end
+
   setup do
     type = "TypeForTests"
     [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
@@ -14,32 +34,21 @@ defmodule Dispatch.ServiceTest do
   end
 
   test "invoke service cast", %{type: type} do
-    :ok = Service.init([type: type])
-    this_pid = self()
+    {:ok, service} = FakeService.start_link(type: type)
     this_node = node()
-    assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}
+    assert_receive({:join, ^service, %{node: ^this_node, state: :online}})
 
-    Client.cast(type, "my_key", ["param"])
-    assert_receive {:cast_request, "my_key", ["param"]}
+    Client.cast(type, "my_key", {:set, "key", self()})
+    assert_receive({:set_request, "key"})
   end
 
   test "invoke service call", %{type: type} do
     this_node = node()
+    {:ok, service} = FakeService.start_link(type: type)
+    assert_receive({:join, ^service, %{node: ^this_node, state: :online}})
 
-    task = Task.async(fn ->
-      Service.init([type: type])
-      receive do
-        {:call_request, from, key, params} ->
-          Service.reply(from, {key, params})
-      end
-    end)
-
-    task_pid = task.pid
-    assert_receive {:join, ^task_pid, %{node: ^this_node, state: :online}}, 5_000
-
-    {state, result} = Client.call(type, "my_key", ["param"])
-    assert state == :ok
-    assert result == {"my_key", ["param"]}
+    {:ok, result} = Client.call(type, "my_key", {:get, "my_key"})
+    assert result == "my_key"
   end
 
 end
