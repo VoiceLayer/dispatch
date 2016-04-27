@@ -66,6 +66,9 @@ Using `get_service_pid/3` will return a tuple in the form `{:ok, node, pid}` whe
 `node` is the node that owns the `pid` that should be used. If no service can be
 found then `{:error, reason}` will be returned.
 
+**NOTE** The `registry` option is currently ignored. Only the type and key are
+used when retrieving a key.
+
 ## Convenience API
 
 There are two modules that can be used. To register a service:
