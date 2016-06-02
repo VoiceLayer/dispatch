@@ -1,2 +1,2 @@
-%{"hash_ring_ex": {:hex, :hash_ring_ex, "1.1.2"},
-  "phoenix_pubsub": {:git, "https://github.com/phoenixframework/phoenix_pubsub.git", "5b14a2e0f2d6408c3b803210c5b38f137da71e47", []}}
+%{"hash_ring_ex": {:hex, :hash_ring_ex, "1.1.2", "68fb0d2782b56c8769f3f476f6d38dab1ae38abad8700b5e57a81be4e28b94ef", [:mix, :rebar], []},
+  "phoenix_pubsub": {:hex, :phoenix_pubsub, "1.0.0-rc.0", "5c9453f9c7c8e4982ba48f408e4cec973ffb312bbe0da5fbe47899b9c91c48c0", [:mix], []}}

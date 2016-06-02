@@ -30,7 +30,7 @@ defmodule Dispatch.Mixfile do
   defp deps do
     [
       {:hash_ring_ex, "~> 1.1.2"},
-      {:phoenix_pubsub, git: "https://github.com/phoenixframework/phoenix_pubsub.git"}
+      {:phoenix_pubsub, "~> 1.0.0-rc"}
     ]
   end
 end
