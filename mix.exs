@@ -14,7 +14,7 @@ defmodule Dispatch.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :phoenix_pubsub, :hash_ring_ex],
+    [applications: [:logger, :phoenix_pubsub],
       mod: {Dispatch, []}]
   end
 
@@ -29,7 +29,7 @@ defmodule Dispatch.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:hash_ring_ex, "~> 1.1.2"},
+      {:hash_ring, github: "voicelayer/hash-ring"},
       {:phoenix_pubsub, "~> 1.0.0"}
     ]
   end

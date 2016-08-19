@@ -23,7 +23,7 @@ defmodule Dispatch.ServiceTest do
   end
 
   setup do
-    type = "TypeForTests"
+    type = "TypeForServiceTest"
     [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
     Phoenix.PubSub.subscribe(pubsub_server, type)
     {:ok, _registry_pid} = Helper.setup_registry()

@@ -47,27 +47,38 @@ defmodule Dispatch.RegistryTest do
 
   test "remove service removes it from registry", %{registry_pid: registry_pid, type: type} do
     Registry.add_service(registry_pid, type, self())
-    Registry.remove_service(registry_pid, type, self())
-
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
+    assert {:ok, this_node, this_pid} == Registry.get_service_pid(registry_pid, type, "key")
+
+    Registry.remove_service(registry_pid, type, self())
     assert_receive {:leave, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
 
     assert [] == Registry.get_services(registry_pid, type)
+    assert {:error, :no_service_for_key} == Registry.get_service_pid(registry_pid, type, "key")
   end
 
   test "disable service", %{registry_pid: registry_pid, type: type} do
     Registry.add_service(registry_pid, type, self())
-    Registry.disable_service(registry_pid, type, self())
-
     {this_pid, this_node} = {self(), node()}
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
+    assert {:ok, this_node, this_pid} == Registry.get_service_pid(registry_pid, type, "key")
+
+    Registry.disable_service(registry_pid, type, self())
+    assert_receive {:leave, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :offline}}, 1_000
 
     [{pid, %{node: node, state: state}}] = Registry.get_services(registry_pid, type)
     assert pid == self
     assert node == node()
     assert state == :offline
+    assert {:error, :no_service_for_key} == Registry.get_service_pid(registry_pid, type, "key")
+
+    Registry.enable_service(registry_pid, type, self())
+    assert_receive {:leave, ^this_pid, %{node: ^this_node, state: :offline}}, 1_000
+    assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
+    assert {:ok, this_node, this_pid} == Registry.get_service_pid(registry_pid, type, "key")
+
   end
 
   test "enable multiple services", %{registry_pid: registry_pid, type: type} do

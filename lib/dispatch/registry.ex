@@ -162,13 +162,8 @@ defmodule Dispatch.Registry do
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
   def get_service_pid(_server, type, key) do
-    hashring_server =
-      Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
-      |> Module.concat(type)
-
-      service = with pid when is_pid(pid) <- Process.whereis(hashring_server),
-               {:ok, service_info}  <- HashRing.find(hashring_server, key),
-               do: :erlang.binary_to_term(service_info)
+    service = with {:ok, service_info}  <- :hash_ring.find_node(type, key),
+              do: :erlang.binary_to_term(service_info)
 
     case service do
       {host, pid} when is_pid(pid) -> {:ok, host, pid}
@@ -179,36 +174,32 @@ defmodule Dispatch.Registry do
   @doc false
   def init(opts) do
     server = Keyword.fetch!(opts, :pubsub_server)
-    hashring_server = Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
     {:ok, %{pubsub_server: server,
-            node_name: Phoenix.PubSub.node_name(server),
-            hashring_server: hashring_server}}
+            node_name: Phoenix.PubSub.node_name(server)}}
   end
 
   @doc false
   def handle_diff(diff, state) do
     for {type, {joins, leaves}} <- diff do
-      hashring_server = Module.concat(state.hashring_server, type)
-      case Process.whereis(hashring_server) do
-        pid when is_pid(pid) -> pid
-        _                    ->
-          {:ok, pid} = Dispatch.HashRingSupervisor.start_hash_ring(state.hashring_server, [name: hashring_server])
+      if !:hash_ring.has_ring(type) do
+        :ok = :hash_ring.create_ring(type, 128)
+      end
+      for {pid, meta} <- leaves do
+        service_info = {meta.node, pid}
+        if !Enum.any?(joins, fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
+          :hash_ring.remove_node(type, service_info |> :erlang.term_to_binary)
+        end
+        Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
       end
       for {pid, meta} <- joins do
         service_info = {meta.node, pid}
         case meta.state do
           :online ->
-            HashRing.add(hashring_server, service_info |> :erlang.term_to_binary)
-          :offline ->
-            HashRing.drop(hashring_server, service_info |> :erlang.term_to_binary)
+            :hash_ring.add_node(type, service_info |> :erlang.term_to_binary)
+          _ -> :ok
         end
 
         Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:join, pid, meta})
-      end
-      for {pid, meta} <- leaves do
-        service_info = {meta.node, pid}
-        HashRing.drop(hashring_server, service_info |> :erlang.term_to_binary)
-        Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
       end
     end
     {:ok, state}

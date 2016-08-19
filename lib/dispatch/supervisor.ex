@@ -6,9 +6,8 @@ defmodule Dispatch.Supervisor do
   end
 
   def init(:ok) do
-    hashring_name = Application.get_env(:dispatch, :hashring, Dispatch.HashRing)
     children = [
-      supervisor(Dispatch.HashRingSupervisor, [[name: hashring_name]]),
+      worker(:hash_ring, []),
     ]
     children = if Application.get_env(:dispatch, :test) do
       children
@@ -17,6 +16,6 @@ defmodule Dispatch.Supervisor do
       [worker(Dispatch.Registry, [[name: registry_name]]) | children]
     end
 
-    supervise(children, strategy: :one_for_one)
+    supervise(children, strategy: :one_for_all)
   end
 end

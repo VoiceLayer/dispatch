@@ -1,6 +1,6 @@
 defmodule Dispatch.Helper do
   import ExUnit.Assertions
-  alias Dispatch.{HashRingSupervisor, Registry}
+  alias Dispatch.Registry
 
   @rtype "TestDispatchType"
 
@@ -15,9 +15,7 @@ defmodule Dispatch.Helper do
   end
 
   def clear_type(type) do
-    if pid = Process.whereis(Module.concat(Dispatch.HashRing, type)) do
-      HashRingSupervisor.stop_hash_ring(Dispatch.HashRing, pid)
-    end
+    :hash_ring.delete_ring(type)
   end
 
   def wait_dispatch_ready(node \\ nil) do
