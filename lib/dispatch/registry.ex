@@ -19,8 +19,6 @@ defmodule Dispatch.Registry do
 
   ## Optional
 
-    * `:registry` - The name of the registry. Defaults to `Dispatch.Registry`
-    * `:hashring` - The name of the hashring. Defaults to `Dispatch.HashRing`
     * `:test` - If set to true then a registry and hashring will not be
       started when the application starts. They should be started manually
       with `Dispatch.Registry.start_link/1` and
@@ -52,55 +50,51 @@ defmodule Dispatch.Registry do
   @doc """
   Add a service to the registry. The service is set as online.
 
-    * `server` - The pid or named pid for the registry
     * `type` - The type of the service. Can be any elixir term
     * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.add_service(Dispatch.Registry, :downloader, self())
+      iex> Dispatch.Registry.add_service(:downloader, self())
       {:ok, "g20AAAAIlB7XfDdRhmk="}
   """
-  def add_service(server, type, pid) do
-    Phoenix.Tracker.track(server, pid, type, pid, %{node: node(), state: :online})
+  def add_service(type, pid) do
+    Phoenix.Tracker.track(__MODULE__, pid, type, pid, %{node: node(), state: :online})
   end
 
   @doc """
   Set a service as online. When a service is online it can be used.
 
-  * `server` - The pid or named pid for the registry
   * `type` - The type of the service. Can be any elixir term
   * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.enable_service(Dispatch.Registry, :downloader, self())
+      iex> Dispatch.Registry.enable_service(:downloader, self())
       {:ok, "g20AAAAI9+IQ28ngDfM="}
   """
-  def enable_service(server, type, pid) do
-    Phoenix.Tracker.update(server, pid, type, pid, %{node: node(), state: :online})
+  def enable_service(type, pid) do
+    Phoenix.Tracker.update(__MODULE__, pid, type, pid, %{node: node(), state: :online})
   end
 
   @doc """
   Set a service as offline. When a service is offline it can't be used.
 
-  * `server` - The pid or named pid for the registry
   * `type` - The type of the service. Can be any elixir term
   * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.disable_service(Dispatch.Registry, :downloader, self())
+      iex> Dispatch.Registry.disable_service(:downloader, self())
       {:ok, "g20AAAAI4oU3ICYcsoQ="}
   """
-  def disable_service(server, type, pid) do
-    Phoenix.Tracker.update(server, pid, type, pid, %{node: node(), state: :offline})
+  def disable_service(type, pid) do
+    Phoenix.Tracker.update(__MODULE__, pid, type, pid, %{node: node(), state: :offline})
   end
 
   @doc """
   Remove a service from the registry.
 
-  * `server` - The pid or named pid for the registry
   * `type` - The type of the service. Can be any elixir term
   * `pid` - The pid that provides the service
 
@@ -109,31 +103,29 @@ defmodule Dispatch.Registry do
       iex> Dispatch.Registry.remove_service(Dispatch.Registry, :downloader, self())
       {:ok, "g20AAAAI4oU3ICYcsoQ="}
   """
-  def remove_service(server, type, pid) do
-    Phoenix.Tracker.untrack(server, pid, type, pid)
+  def remove_service(type, pid) do
+    Phoenix.Tracker.untrack(__MODULE__, pid, type, pid)
   end
 
   @doc """
   List all of the services for a particular type.
 
-  * `server` - The pid or named pid for the registry
   * `type` - The type of the service. Can be any elixir term
 
   ## Examples
 
-      iex> Dispatch.Registry.get_services(Dispatch.Registry, :downloader)
+      iex> Dispatch.Registry.get_services(:downloader)
       [{#PID<0.166.0>,
         %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
   """
-  def get_services(server, type) do
-    Phoenix.Tracker.list(server, type)
+  def get_services(type) do
+    Phoenix.Tracker.list(__MODULE__, type)
   end
 
   @doc """
   List all of the services that are online for a particular type.
 
-  * `server` - The pid or named pid for the registry
   * `type` - The type of the service. Can be any elixir term
 
   ## Examples
@@ -143,26 +135,24 @@ defmodule Dispatch.Registry do
         %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
   """
-  def get_online_services(server, type) do
-    server
-      |> get_services(type)
+  def get_online_services(type) do
+      get_services(type)
       |> Enum.filter(&(elem(&1, 1)[:state] == :online))
   end
 
   @doc """
   Get a service pid to use for a particular `key`
 
-  * `server` - Not currently used
   * `type` - The type of service to retrieve
   * `key` - The key to lookup the service. Can be any elixir term
 
   ## Examples
 
-      iex> Dispatch.Registry.get_service_pid(Dispatch.Registry, :uploader, "file.png")
+      iex> Dispatch.Registry.get_service_pid(:uploader, "file.png")
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
-  def get_service_pid(_server, type, key) do
-    service = with {:ok, service_info}  <- :hash_ring.find_node(type, key),
+  def get_service_pid(type, key) do
+    service = with {:ok, service_info} <- :hash_ring.find_node(type, key),
               do: :erlang.binary_to_term(service_info)
 
     case service do
@@ -170,6 +160,19 @@ defmodule Dispatch.Registry do
       _ -> {:error, :no_service_for_key}
     end
   end
+
+  def get_service_many_pids(count, type, key) do
+    service_list = with {:ok, service_info_list}  <- :hash_ring.get_nodes(type, key, count),
+              do: Enum.map(service_info_list, fn (service_info) ->
+                :erlang.binary_to_term(service_info)
+              end)
+
+    case service_list do
+      list when is_list(list) -> list
+      _ -> []
+    end
+  end
+
 
   @doc false
   def init(opts) do

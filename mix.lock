@@ -1,2 +1,2 @@
-%{"hash_ring": {:git, "https://github.com/voicelayer/hash-ring.git", "191df6cc8b4fc392b288dd93d252f4651f50b8d7", []},
+%{"hash_ring": {:git, "https://github.com/voicelayer/hash-ring.git", "ff2163b60fd395892aba6237b3e739bb904d3833", []},
   "phoenix_pubsub": {:hex, :phoenix_pubsub, "1.0.0", "c31af4be22afeeebfaf246592778c8c840e5a1ddc7ca87610c41ccfb160c2c57", [:mix], []}}
