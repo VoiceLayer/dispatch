@@ -1,6 +1,6 @@
 # Dispatch
 
-A distributed registry build on top of [phoenix_pubsub](https://github.com/phoenixframework/phoenix_pubsub).
+A library for building distributed applicationson top of phoenix tracker [phoenix_pubsub](https://github.com/phoenixframework/phoenix_pubsub).
 
 ## Installation
 
@@ -24,9 +24,9 @@ Configure the registry:
 
 ```elixir
 config :dispatch,
-  timeout: 5_000,
-  hashring: Dispatch.HashRing, # Prefix to use for HashRing registered name
-  registry: Dispatch.Registry  # Name to assign to the registry
+  pubsub: [name: Phoenix.PubSub.Test.PubSub, 
+           adapter: Phoenix.PubSub.PG2,
+           opts: [pool_size: 1]]
 ```
 
 When the application is started, the registry with the configured name will
@@ -37,17 +37,16 @@ supervise each hash ring.
 
 ```elixir
 iex> {:ok, service_pid} = Agent.start_link(fn _ -> 1 end) # Use your real service here
-iex> Dispatch.Registry.add_service(Dispatch.Registry, :uploader, service_pid)
+iex> Dispatch.Registry.add_service(:uploader, service_pid)
 {:ok, "g20AAAAI9+IQ28ngDfM="}
 ```
 
-In this example, `Dispatch.Registry` is the name that the registry pid has been
-registered as. `:uploader` is the type of the service.
+In this example, :uploader` is the type of the service.
 
 ### Retrieve services
 
 ```elixir
-iex> Dispatch.Registry.get_services(Dispatch.Registry, :uploader)
+iex> Dispatch.Registry.get_services(:uploader)
 [{#PID<0.166.0>,
   %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
   phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
@@ -58,16 +57,13 @@ This retrieves all of the services.
 ### Finding a service for a key
 
 ```elixir
-iex> Dispatch.Registry.get_service_pid(Dispatch.Registry, :uploader, "file.png")
+iex> Dispatch.Registry.get_service(:uploader, "file.png")
 {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
 ```
 
-Using `get_service_pid/3` will return a tuple in the form `{:ok, node, pid}` where
+Using `get_service/2` will return a tuple in the form `{:ok, node, pid}` where
 `node` is the node that owns the `pid` that should be used. If no service can be
 found then `{:error, reason}` will be returned.
-
-**NOTE** The `registry` option is currently ignored. Only the type and key are
-used when retrieving a key.
 
 ## Convenience API
 

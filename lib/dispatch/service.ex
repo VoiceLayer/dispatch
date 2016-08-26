@@ -11,21 +11,21 @@ defmodule Dispatch.Service do
   end
 
   def cast(type, key, params) do
-    case Registry.get_service_pid(type, key) do
+    case Registry.get_service(type, key) do
       {:ok, _node, pid} -> GenServer.cast(pid, params)
       _ -> {:error, :service_unavailable}
     end
   end
 
   def call(type, key, params, timeout \\ 5000) do
-    case Registry.get_service_pid(type, key) do
+    case Registry.get_service(type, key) do
       {:ok, _node, pid} -> GenServer.call(pid, params, timeout)
       _ -> {:error, :service_unavailable}
     end
   end
 
   def multi_cast(count, type, key, params) do
-    case Registry.get_service_many_pids(count, type, key) do
+    case Registry.get_multi_service(count, type, key) do
       [] -> {:error, :service_unavailable}
       servers -> 
         servers
@@ -37,18 +37,20 @@ defmodule Dispatch.Service do
   end
 
   def multi_call(count, type, key, params, timeout \\ 5000) do
-    case Registry.get_service_many_pids(count, type, key) do
+    case Registry.get_multi_service(count, type, key) do
       [] -> {:error, :service_unavailable}
       servers -> 
-        parent = self
         for {_node, pid} <- servers do
-          Task.async(fn ->
-            {pid, GenServer.call(pid, params, timeout)}
-            # Process.unlink(parent)
+          Task.Supervisor.async_nolink(TaskSupervisor, fn ->
+            try do
+              {:ok, pid, GenServer.call(pid, params, timeout)}
+            catch
+              :exit, reason -> {:error, pid, reason}
+            end
           end)
-        end |> Enum.map(&Task.await(&1, :infinity))
+      end 
+      |> Enum.map(&Task.await(&1, :infinity))
     end
   end
-
 
 end

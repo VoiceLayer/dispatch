@@ -6,16 +6,18 @@ defmodule Dispatch.Supervisor do
   end
 
   def init(:ok) do
-    children = [
-      worker(:hash_ring, []),
-    ]
-    children = if Application.get_env(:dispatch, :test) do
-      children
-    else
-      registry_name = Application.get_env(:dispatch, :registry, Dispatch.Registry)
-      [worker(Dispatch.Registry, [[name: registry_name]]) | children]
-    end
+    registry_name = Application.get_env(:dispatch, :registry, Dispatch.Registry)
+    pubsub = Application.get_env(:dispatch, :pubsub, [])
 
-    supervise(children, strategy: :one_for_all)
+    children = [
+      supervisor(pubsub[:adapter] || Phoenix.PubSub.PG2,
+                 [pubsub[:name] || Phoenix.PubSub.Test.PubSub,
+                  pubsub[:opts] || []]),
+      worker(:hash_ring, []),
+      worker(Dispatch.Registry, [[name: registry_name, log_level: :debug]]),
+      supervisor(Task.Supervisor, [[name: TaskSupervisor]])
+    ]
+
+    supervise(children, strategy: :rest_for_one)
   end
 end

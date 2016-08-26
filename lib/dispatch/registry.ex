@@ -28,11 +28,7 @@ defmodule Dispatch.Registry do
   @behaviour Phoenix.Tracker
 
   @doc """
-  Start a new registry. Unless overridden, the `pubsub` config value from
-  `phoenix_pubsub` will be used.
-
-  The `name` option will default to `Dispatch.Registry` and can be overridden
-  with the `name` option.
+  Start a new registry. The `pubsub` config value from `Dispatch` will be used.
 
   ## Examples
 
@@ -40,7 +36,8 @@ defmodule Dispatch.Registry do
       {:ok, #PID<0.168.0>}
   """
   def start_link(opts \\ []) do
-    [pubsub_server, _pubsub_opts] = Application.get_env(:phoenix_pubsub, :pubsub)
+    pubsub_server = Application.get_env(:dispatch, :pubsub)
+                      |> Keyword.get(:name, Dispatch.PubSub)
     full_opts = Keyword.merge([name: __MODULE__,
                           pubsub_server: pubsub_server],
                          opts)
@@ -100,7 +97,7 @@ defmodule Dispatch.Registry do
 
   ## Examples
 
-      iex> Dispatch.Registry.remove_service(Dispatch.Registry, :downloader, self())
+      iex> Dispatch.Registry.remove_service(:downloader, self())
       {:ok, "g20AAAAI4oU3ICYcsoQ="}
   """
   def remove_service(type, pid) do
@@ -130,7 +127,7 @@ defmodule Dispatch.Registry do
 
   ## Examples
 
-      iex> Dispatch.Registry.get_online_services(Dispatch.Registry, :downloader)
+      iex> Dispatch.Registry.get_online_services(:downloader)
       [{#PID<0.166.0>,
         %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
@@ -141,17 +138,17 @@ defmodule Dispatch.Registry do
   end
 
   @doc """
-  Get a service pid to use for a particular `key`
+  Get a service to use for a particular `key`
 
   * `type` - The type of service to retrieve
   * `key` - The key to lookup the service. Can be any elixir term
 
   ## Examples
 
-      iex> Dispatch.Registry.get_service_pid(:uploader, "file.png")
+      iex> Dispatch.Registry.get_service(:uploader, "file.png")
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
-  def get_service_pid(type, key) do
+  def get_service(type, key) do
     service = with {:ok, service_info} <- :hash_ring.find_node(type, key),
               do: :erlang.binary_to_term(service_info)
 
@@ -161,13 +158,22 @@ defmodule Dispatch.Registry do
     end
   end
 
-  def get_service_many_pids(count, type, key) do
-    service_list = with {:ok, service_info_list}  <- :hash_ring.get_nodes(type, key, count),
-              do: Enum.map(service_info_list, fn (service_info) ->
-                :erlang.binary_to_term(service_info)
-              end)
+  @doc """
+  Get a list of `count` service instances to use for a particular `key`
 
-    case service_list do
+  * `count` - The number of service instances to retrieve
+  * `type` - The type of services to retrieve
+  * `key` - The key to lookup the service. Can be any elixir term
+
+  ## Examples
+
+      iex> Dispatch.Registry.get_multi_service(2, :uploader, "file.png")
+      [{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
+  """
+  def get_multi_service(count, type, key) do
+    with({:ok, service_info_list}  <- :hash_ring.get_nodes(type, key, count),
+      do: Enum.map(service_info_list, &:erlang.binary_to_term/1))
+    |> case do
       list when is_list(list) -> list
       _ -> []
     end
@@ -177,28 +183,27 @@ defmodule Dispatch.Registry do
   @doc false
   def init(opts) do
     server = Keyword.fetch!(opts, :pubsub_server)
-    {:ok, %{pubsub_server: server,
-            node_name: Phoenix.PubSub.node_name(server)}}
+    {:ok, %{pubsub_server: server}}
   end
 
   @doc false
   def handle_diff(diff, state) do
     for {type, {joins, leaves}} <- diff do
-      if !:hash_ring.has_ring(type) do
+      unless :hash_ring.has_ring(type) do
         :ok = :hash_ring.create_ring(type, 128)
       end
       for {pid, meta} <- leaves do
-        service_info = {meta.node, pid}
-        if !Enum.any?(joins, fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
-          :hash_ring.remove_node(type, service_info |> :erlang.term_to_binary)
+        service_info = :erlang.term_to_binary({meta.node, pid})
+        unless Enum.any?(joins, fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
+          :hash_ring.remove_node(type, service_info)
         end
         Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
       end
       for {pid, meta} <- joins do
-        service_info = {meta.node, pid}
+        service_info = :erlang.term_to_binary({meta.node, pid})
         case meta.state do
           :online ->
-            :hash_ring.add_node(type, service_info |> :erlang.term_to_binary)
+            :hash_ring.add_node(type, service_info)
           _ -> :ok
         end
 
