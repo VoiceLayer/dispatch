@@ -1,13 +1,17 @@
 defmodule Dispatch.Mixfile do
   use Mix.Project
 
+  @version File.read!("VERSION") |> String.strip
+
   def project do
     [app: :dispatch,
-     version: "0.0.1",
+     version: @version,
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps]
+     description: description(),
+     package: package(),
+     deps: deps()]
   end
 
   # Configuration for the OTP application
@@ -22,7 +26,24 @@ defmodule Dispatch.Mixfile do
   defp deps do
     [
       {:hash_ring, github: "voicelayer/hash-ring"},
-      {:phoenix_pubsub, "~> 1.0.0"}
+      {:phoenix_pubsub, "~> 1.0.0"},
+      {:ex_doc, "~> 0.13.0", only: :dev}
     ]
   end
+
+  defp description do
+    """
+    A distributed service registry built on top of phoenix_pubsub.
+    Requests are dispatched to one or more services based on hashed keys.
+    """
+  end
+
+  defp package do
+    [files: ~w(lib test mix.exs README.md LICENSE.md VERSION),
+     maintainers: ["Gary Rennie", "Gabi Zuniga"],
+     licenses: ["MIT"],
+     links: %{"GitHub" => "https://github.com/voicelayer/dispatch",
+              "Docs" => "http://hexdocs.pm/dispatch"}]
+  end
+
 end

@@ -12,7 +12,7 @@ Requests are dispatched to one or more services based on hashed keys.
 
 ```elixir
         def deps do
-          [{:dispatch, github: "voicelayer/dispatch"}]
+          [{:dispatch, "~> 0.1.0"}]
         end
 ```
 
