@@ -120,4 +120,13 @@ defmodule Dispatch.RegistryTest do
 
     assert {:ok, this_node, this_pid} == Registry.get_service(type, "my_key")
   end
+
+  test "get service pid from term key", %{type: type}  do
+    Registry.add_service(type, self())
+    {this_pid, this_node} = {self(), node()}
+    assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
+
+    assert {:ok, this_node, this_pid} == Registry.get_service(type, {:abc, 1})
+  end
+
 end

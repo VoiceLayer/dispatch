@@ -149,10 +149,9 @@ defmodule Dispatch.Registry do
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
   def get_service(type, key) do
-    service = with {:ok, service_info} <- :hash_ring.find_node(type, key),
-              do: :erlang.binary_to_term(service_info)
-
-    case service do
+    with({:ok, service_info} <- :hash_ring.find_node(type, :erlang.term_to_binary(key)),
+              do: :erlang.binary_to_term(service_info))
+    |> case do
       {host, pid} when is_pid(pid) -> {:ok, host, pid}
       _ -> {:error, :no_service_for_key}
     end
@@ -171,7 +170,7 @@ defmodule Dispatch.Registry do
       [{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
   """
   def get_multi_service(count, type, key) do
-    with({:ok, service_info_list}  <- :hash_ring.get_nodes(type, key, count),
+    with({:ok, service_info_list} <- :hash_ring.get_nodes(type, :erlang.term_to_binary(key), count),
       do: Enum.map(service_info_list, &:erlang.binary_to_term/1))
     |> case do
       list when is_list(list) -> list
@@ -194,7 +193,8 @@ defmodule Dispatch.Registry do
       end
       for {pid, meta} <- leaves do
         service_info = :erlang.term_to_binary({meta.node, pid})
-        unless Enum.any?(joins, fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
+        unless Enum.any?(joins,
+                         fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
           :hash_ring.remove_node(type, service_info)
         end
         Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
