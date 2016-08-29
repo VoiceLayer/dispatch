@@ -1,5 +1,7 @@
 # Dispatch
 
+[![Build Status](https://travis-ci.org/VoiceLayer/dispatch.svg?branch=master)](https://travis-ci.org/voicelayer/dispatch)
+
 A distributed service registry built on top of [phoenix_pubsub](https://github.com/phoenixframework/phoenix_pubsub).
 
 Requests are dispatched to one or more services based on hashed keys.
