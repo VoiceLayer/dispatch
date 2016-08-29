@@ -8,11 +8,13 @@ Requests are dispatched to one or more services based on hashed keys.
 
 ## Installation
 
-  1. Add dispatch to your list of dependencies in `mix.exs`:
+  1. Add dispatch and hash_ring to your list of dependencies in `mix.exs`:
 
 ```elixir
         def deps do
-          [{:dispatch, "~> 0.1.0"}]
+          [
+           {:hash_ring, github: "voicelayer/hash-ring"},
+           {:dispatch, "~> 0.1.0"}]
         end
 ```
 
