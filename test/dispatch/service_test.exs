@@ -23,7 +23,7 @@ defmodule Dispatch.ServiceTest do
   end
 
   setup do
-    type = "TypeForServiceTest"
+    type = "ServiceTest"
     pubsub_server = Application.get_env(:dispatch, :pubsub)
                       |> Keyword.get(:name, Dispatch.PubSub)
     Phoenix.PubSub.subscribe(pubsub_server, type)
@@ -31,10 +31,10 @@ defmodule Dispatch.ServiceTest do
     on_exit fn ->
       Helper.clear_type(type)
     end
-    {:ok, %{type: type}}
+    {:ok, %{service_type: type}}
   end
 
-  test "invoke service cast", %{type: type} do
+  test "invoke service cast", %{service_type: type} do
     {:ok, service} = FakeService.start_link(type: type)
     this_node = node()
     assert_receive({:join, ^service, %{node: ^this_node, state: :online}})
@@ -43,7 +43,7 @@ defmodule Dispatch.ServiceTest do
     assert_receive({:set_request, "key"})
   end
 
-  test "invoke service call", %{type: type} do
+  test "invoke service call", %{service_type: type} do
     this_node = node()
     {:ok, service} = FakeService.start_link(type: type)
     assert_receive({:join, ^service, %{node: ^this_node, state: :online}})
@@ -52,7 +52,7 @@ defmodule Dispatch.ServiceTest do
     assert result == "my_key"
   end
 
-  test "invoke service multi cast", %{type: type} do
+  test "invoke service multi cast", %{service_type: type} do
     {:ok, service1} = FakeService.start_link(type: type)
     {:ok, service2} = FakeService.start_link(type: type)
     {:ok, service3} = FakeService.start_link(type: type)
@@ -67,7 +67,7 @@ defmodule Dispatch.ServiceTest do
     assert_receive({:set_request, "key"})
   end
 
-  test "invoke service multi call", %{type: type} do
+  test "invoke service multi call", %{service_type: type} do
     {:ok, service1} = FakeService.start_link(type: type)
     {:ok, service2} = FakeService.start_link(type: type)
     {:ok, service3} = FakeService.start_link(type: type)
