@@ -1,20 +1,26 @@
 # Dispatch
 
-A library for building distributed applicationson top of phoenix tracker [phoenix_pubsub](https://github.com/phoenixframework/phoenix_pubsub).
+A distributed service registry built on top of [phoenix_pubsub](https://github.com/phoenixframework/phoenix_pubsub).
+
+Requests are dispatched to one or more services based on hashed keys.
 
 ## Installation
 
   1. Add dispatch to your list of dependencies in `mix.exs`:
 
+```elixir
         def deps do
           [{:dispatch, github: "voicelayer/dispatch"}]
         end
+```
 
   2. Ensure dispatch is started before your application:
 
+```elixir
         def application do
           [applications: [:dispatch]]
         end
+```
 
 ## Usage
 
@@ -29,9 +35,8 @@ config :dispatch,
            opts: [pool_size: 1]]
 ```
 
-When the application is started, the registry with the configured name will
-be started. A supervisor with the `hashring` name above will be started to
-supervise each hash ring.
+When the application is started, a supervisor with be started supervising
+a pubsub adapter with the name and options specified.
 
 ### Register a service
 
@@ -43,7 +48,7 @@ iex> Dispatch.Registry.add_service(:uploader, service_pid)
 
 In this example, :uploader` is the type of the service.
 
-### Retrieve services
+### Retrieve all services for a service type
 
 ```elixir
 iex> Dispatch.Registry.get_services(:uploader)
@@ -52,39 +57,60 @@ iex> Dispatch.Registry.get_services(:uploader)
   phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
 ```
 
-This retrieves all of the services.
+This retrieves all of the services info.
 
 ### Finding a service for a key
 
 ```elixir
-iex> Dispatch.Registry.get_service(:uploader, "file.png")
+iex> Dispatch.Registry.find_service(:uploader, "file.png")
 {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
 ```
 
-Using `get_service/2` will return a tuple in the form `{:ok, node, pid}` where
-`node` is the node that owns the `pid` that should be used. If no service can be
-found then `{:error, reason}` will be returned.
+Using `find_service/2` returns a tuple in the form `{:ok, node, pid}` where
+`node` is the node that owns the service `pid`. If no service can be
+found then `{:error, reason}` is returned.
+
+### Finding a list of `count` service instances for a particular `key`
+
+```elixir
+iex> Dispatch.Registry.find_multi_service(2, :uploader, "file.png")
+[{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
+```
 
 ## Convenience API
 
-There are two modules that can be used. To register a service:
+The `Service` module can be used to automatically handle registration of a service 
+based on a `GenServer`.
+
+Call `Service.init` within your GenServer's `init` function.
 
 ```elixir
-Dispatch.Service.init(type: :uploader)
+def init(_) do
+  :ok = Dispatch.Service.init(type: :uploader)
+  {:ok, %{}}
+end
 ```
 
-This will use the configuration name to attach a service to the configured registry
+This will use the type provided to attach a service to the configured registry
 pid.
+
+Use `Dispatch.Service.cast` and `Dispatch.Service.call` to route the GenServer `cast` or `call`
+to the appropriate service based on the `key` provided.
+
+Use `Dispatch.Service.multi_cast` to send cast messages to several service instances at once.
+
+`Dispatch.Service.multi_call` calls several service instances and waits
+for all the responses before returning.
 
 ```elixir
 
 # File is a map with the format %{name: "file.png", contents: "test file"} 
 def upload(file)
-  Dispatch.Client.cast(:uploader, file.name, {:upload, file})
+  Dispatch.Service.cast(:uploader, file.name, {:upload, file})
 end
 
 def download(file)
-  Dispatch.Client.call(:uploader, file.name, {:download, file})
+  Dispatch.Service.call(:uploader, file.name, {:download, file})
 end
 
 def handle_cast({:upload, file}, state) do
@@ -97,3 +123,4 @@ def handle_call({:download, %{name: name}}, from, state) do
   {:reply, {:ok, Map.get(state, name}}, state}
 end
 ```
+

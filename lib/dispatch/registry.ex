@@ -138,17 +138,17 @@ defmodule Dispatch.Registry do
   end
 
   @doc """
-  Get a service to use for a particular `key`
+  Find a service to use for a particular `key`
 
   * `type` - The type of service to retrieve
   * `key` - The key to lookup the service. Can be any elixir term
 
   ## Examples
 
-      iex> Dispatch.Registry.get_service(:uploader, "file.png")
+      iex> Dispatch.Registry.find_service(:uploader, "file.png")
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
-  def get_service(type, key) do
+  def find_service(type, key) do
     with({:ok, service_info} <- :hash_ring.find_node(type, :erlang.term_to_binary(key)),
               do: :erlang.binary_to_term(service_info))
     |> case do
@@ -158,7 +158,7 @@ defmodule Dispatch.Registry do
   end
 
   @doc """
-  Get a list of `count` service instances to use for a particular `key`
+  Find a list of `count` service instances to use for a particular `key`
 
   * `count` - The number of service instances to retrieve
   * `type` - The type of services to retrieve
@@ -166,10 +166,10 @@ defmodule Dispatch.Registry do
 
   ## Examples
 
-      iex> Dispatch.Registry.get_multi_service(2, :uploader, "file.png")
+      iex> Dispatch.Registry.find_multi_service(2, :uploader, "file.png")
       [{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
   """
-  def get_multi_service(count, type, key) do
+  def find_multi_service(count, type, key) do
     with({:ok, service_info_list} <- :hash_ring.get_nodes(type, :erlang.term_to_binary(key), count),
       do: Enum.map(service_info_list, &:erlang.binary_to_term/1))
     |> case do
