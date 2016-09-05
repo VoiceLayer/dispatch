@@ -50,7 +50,7 @@ iex> Dispatch.Registry.add_service(:uploader, service_pid)
 {:ok, "g20AAAAI9+IQ28ngDfM="}
 ```
 
-In this example, :uploader` is the type of the service.
+In this example, `:uploader` is the type of the service.
 
 ### Retrieve all services for a service type
 
