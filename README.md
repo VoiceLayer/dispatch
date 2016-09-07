@@ -36,11 +36,15 @@ Configure the registry:
 config :dispatch,
   pubsub: [name: Phoenix.PubSub.Test.PubSub, 
            adapter: Phoenix.PubSub.PG2,
-           opts: [pool_size: 1]]
+           opts: [pool_size: 1]],
+  registry: [log_level: :debug,
+             broadcast_period: 25,
+             max_silent_periods: 3]
 ```
 
 When the application is started, a supervisor with be started supervising
-a pubsub adapter with the name and options specified.
+a pubsub adapter with the name and options specified. One can also
+customize the tracker options for the registry.
 
 ### Register a service
 

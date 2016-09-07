@@ -5,21 +5,18 @@ defmodule Dispatch.Helper do
   @rtype "TestDispatchType"
 
   def setup_registry() do
-    registry_server = Application.get_env(:dispatch, :registry, Registry)
-    # {:ok, registry_pid} = Registry.start_link()
     {:ok, registry_pid} = Registry.start_link([broadcast_period: 5_000,
                                                max_silent_periods: 20])
-    if Process.whereis(registry_server) do
-      Process.unregister(registry_server)
+    if Process.whereis(Registry) do
+      Process.unregister(Registry)
     end
-    Process.register(registry_pid, registry_server)
+    Process.register(registry_pid, Registry)
     {:ok, registry_pid}
   end
 
   def clear_type(type) do
     :hash_ring.delete_ring(type)
-    registry_server = Application.get_env(:dispatch, :registry, Registry)
-    if old_pid = Process.whereis(registry_server) do
+    if old_pid = Process.whereis(Registry) do
       Process.exit(old_pid, :kill)
     end
   end
@@ -33,8 +30,7 @@ defmodule Dispatch.Helper do
   end
 
   def get_online_services(type \\ @rtype) do
-    registry_server = Application.get_env(:dispatch, :registry, Registry)
-    Registry.get_services(registry_server, type)
+    Registry.get_services(Registry, type)
   end
 
 end
