@@ -6,7 +6,10 @@ defmodule Dispatch.Supervisor do
   end
 
   def init(:ok) do
-    registry = Application.get_env(:dispatch, :registry, [])
+    registry =
+      Application.get_env(:dispatch, :registry, [])
+      |> Keyword.put_new(:name, Dispatch.Registry)
+
     pubsub = Application.get_env(:dispatch, :pubsub, [])
 
     children = [
@@ -14,7 +17,7 @@ defmodule Dispatch.Supervisor do
                  [pubsub[:name] || Phoenix.PubSub.Test.PubSub,
                   pubsub[:opts] || []]),
       worker(:hash_ring, []),
-      worker(Dispatch.Registry, [[{:name, Dispatch.Registry} | registry]]),
+      worker(Dispatch.Registry, [registry]),
       supervisor(Task.Supervisor, [[name: TaskSupervisor]])
     ]
 
