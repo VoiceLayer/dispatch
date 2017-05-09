@@ -13,8 +13,9 @@ Requests are dispatched to one or more services based on hashed keys.
 ```elixir
         def deps do
           [
-           {:hash_ring, github: "voicelayer/hash-ring"},
-           {:dispatch, "~> 0.1.0"}]
+           {:hash_ring, github: "voicelayer/hash-ring", manager: :rebar},
+           {:dispatch, "~> 0.1.2"}
+          ]
         end
 ```
 
@@ -34,7 +35,7 @@ Configure the registry:
 
 ```elixir
 config :dispatch,
-  pubsub: [name: Phoenix.PubSub.Test.PubSub, 
+  pubsub: [name: Dispatch.PubSub,
            adapter: Phoenix.PubSub.PG2,
            opts: [pool_size: 1]],
   registry: [log_level: :debug,

@@ -27,7 +27,7 @@ defmodule Dispatch.Mixfile do
   #
   defp deps do
     [
-      {:hash_ring, github: "voicelayer/hash-ring"},
+      {:hash_ring, github: "voicelayer/hash-ring", manager: :rebar},
       {:phoenix_pubsub, "~> 1.0.0"},
       {:ex_doc, "~> 0.13.0", only: :dev}
     ]
