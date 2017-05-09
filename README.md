@@ -50,7 +50,7 @@ customize the tracker options for the registry.
 ### Register a service
 
 ```elixir
-iex> {:ok, service_pid} = Agent.start_link(fn _ -> 1 end) # Use your real service here
+iex> {:ok, service_pid} = Agent.start_link(fn -> 1 end) # Use your real service here
 iex> Dispatch.Registry.add_service(:uploader, service_pid)
 {:ok, "g20AAAAI9+IQ28ngDfM="}
 ```
