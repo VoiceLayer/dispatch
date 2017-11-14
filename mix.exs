@@ -19,7 +19,7 @@ defmodule Dispatch.Mixfile do
   # Configuration for the OTP application
   #
   def application do
-    [applications: [:logger, :phoenix_pubsub],
+    [applications: [:logger, :phoenix_pubsub, :libring],
       mod: {Dispatch, []}]
   end
 
@@ -27,7 +27,7 @@ defmodule Dispatch.Mixfile do
   #
   defp deps do
     [
-      {:hash_ring, github: "voicelayer/hash-ring", manager: :rebar},
+      {:libring, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 1.0.0"},
       {:ex_doc, "~> 0.13.0", only: :dev}
     ]

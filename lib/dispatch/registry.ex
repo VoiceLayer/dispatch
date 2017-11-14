@@ -149,8 +149,9 @@ defmodule Dispatch.Registry do
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
   def find_service(type, key) do
-    with({:ok, service_info} <- :hash_ring.find_node(type, :erlang.term_to_binary(key)),
-              do: :erlang.binary_to_term(service_info))
+    with(%HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
+         {:ok, service_info} <- HashRing.key_to_node(hash_ring, key),
+              do: service_info)
     |> case do
       {host, pid} when is_pid(pid) -> {:ok, host, pid}
       _ -> {:error, :no_service_for_key}
@@ -170,8 +171,9 @@ defmodule Dispatch.Registry do
       [{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
   """
   def find_multi_service(count, type, key) do
-    with({:ok, service_info_list} <- :hash_ring.get_nodes(type, :erlang.term_to_binary(key), count),
-      do: Enum.map(service_info_list, &:erlang.binary_to_term/1))
+    with(%HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
+         {:ok, service_info} <- HashRing.key_to_nodes(hash_ring, key, count),
+      do: service_info)
     |> case do
       list when is_list(list) -> list
       _ -> []
@@ -182,34 +184,54 @@ defmodule Dispatch.Registry do
   @doc false
   def init(opts) do
     server = Keyword.fetch!(opts, :pubsub_server)
-    {:ok, %{pubsub_server: server}}
+    {:ok, %{pubsub_server: server, hash_rings: %{}}}
   end
 
   @doc false
   def handle_diff(diff, state) do
-    for {type, {joins, leaves}} <- diff do
-      unless :hash_ring.has_ring(type) do
-        :ok = :hash_ring.create_ring(type, 128)
-      end
-      for {pid, meta} <- leaves do
-        service_info = :erlang.term_to_binary({meta.node, pid})
-        unless Enum.any?(joins,
-                         fn({jpid, %{state: meta_state}}) -> jpid == pid && meta_state == :online end) do
-          :hash_ring.remove_node(type, service_info)
-        end
-        Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
-      end
-      for {pid, meta} <- joins do
-        service_info = :erlang.term_to_binary({meta.node, pid})
-        case meta.state do
-          :online ->
-            :hash_ring.add_node(type, service_info)
-          _ -> :ok
-        end
+    hash_rings = GenServer.call(hash_ring_server(), :get_all)
+    hash_rings =
+      Enum.reduce(diff, hash_rings, fn {type, _} = event, hash_rings ->
+        hash_ring =
+          hash_rings
+          |> Map.get(type, HashRing.new())
+          |> remove_leaves(event, state)
+          |> add_joins(event, state)
 
-        Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:join, pid, meta})
-      end
-    end
+        Map.put(hash_rings, type, hash_ring)
+      end)
+
+    GenServer.call(hash_ring_server(), {:put_all, hash_rings})
     {:ok, state}
+  end
+
+  defp remove_leaves(hash_ring, {type, {joins, leaves}}, state) do
+    Enum.reduce(leaves, hash_ring, fn {pid, meta}, acc ->
+      service_info = {meta.node, pid}
+      any_joins = Enum.any?(joins, fn({jpid, %{state: meta_state}}) ->
+        jpid == pid && meta_state == :online
+      end)
+      Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
+      case any_joins do
+        true -> acc
+        _ -> HashRing.remove_node(acc, service_info)
+      end
+    end)
+  end
+
+  defp add_joins(hash_ring, {type, {joins, _leaves}}, state) do
+    Enum.reduce(joins, hash_ring, fn {pid, meta}, acc ->
+      service_info = {meta.node, pid}
+      Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:join, pid, meta})
+      case meta.state do
+        :online ->
+          HashRing.add_node(acc, service_info)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp hash_ring_server() do
+    Module.concat(__MODULE__, HashRing)
   end
 end

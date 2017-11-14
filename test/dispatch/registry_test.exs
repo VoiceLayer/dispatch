@@ -70,7 +70,7 @@ defmodule Dispatch.RegistryTest do
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :offline}}, 1_000
 
     [{pid, %{node: node, state: state}}] = Registry.get_services(type)
-    assert pid == self
+    assert pid == self()
     assert node == node()
     assert state == :offline
     assert {:error, :no_service_for_key} == Registry.find_service(type, "key")
@@ -101,7 +101,7 @@ defmodule Dispatch.RegistryTest do
     assert_receive {:join, ^this_pid, %{node: ^this_node, state: :online}}, 1_000
 
     [{pid, %{node: node, state: state}}] = Registry.get_online_services(type)
-    assert pid == self
+    assert pid == self()
     assert node == node()
     assert state == :online
     Registry.disable_service(type, self())
