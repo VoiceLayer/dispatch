@@ -1,12 +1,12 @@
 defmodule Dispatch.Mixfile do
   use Mix.Project
 
-  @version File.read!("VERSION") |> String.strip
+  @version "0.1.2"
 
   def project do
     [app: :dispatch,
      version: @version,
-     elixir: "~> 1.2",
+     elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      source_url: "https://github.com/VoiceLayer/dispatch",
