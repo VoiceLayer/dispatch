@@ -41,7 +41,7 @@ defmodule Dispatch.Mixfile do
   end
 
   defp package do
-    [files: ~w(lib test mix.exs README.md LICENSE.md VERSION),
+    [files: ~w(lib test mix.exs README.md LICENSE.md),
      maintainers: ["Gary Rennie", "Gabi Zuniga"],
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/voicelayer/dispatch",
