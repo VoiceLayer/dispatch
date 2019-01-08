@@ -46,7 +46,7 @@ defmodule Dispatch.Registry do
         opts
       )
 
-    GenServer.start_link(Phoenix.Tracker, [__MODULE__, full_opts, full_opts], opts)
+    Phoenix.Tracker.start_link(__MODULE__, full_opts, full_opts)
   end
 
   @doc """
