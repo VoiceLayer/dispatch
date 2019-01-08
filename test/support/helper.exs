@@ -8,10 +8,14 @@ defmodule Dispatch.Helper do
     if Process.whereis(Registry), do: Process.unregister(Registry)
     if Process.whereis(Registry.HashRing), do: Process.unregister(Registry.HashRing)
 
-    {:ok, registry_pid} = Registry.start_link([broadcast_period: 5_000,
-                                               max_silent_periods: 20,
-                                               name: Registry])
-    {:ok, _} = Dispatch.HashRingServer.start_link([name: Registry])
+    {:ok, registry_pid} =
+      Registry.start_link(
+        broadcast_period: 5_000,
+        max_silent_periods: 20,
+        name: Registry
+      )
+
+    {:ok, _} = Dispatch.HashRingServer.start_link(name: Registry)
     {:ok, registry_pid}
   end
 
@@ -36,5 +40,4 @@ defmodule Dispatch.Helper do
   def get_online_services(type \\ @rtype) do
     Registry.get_services(Registry, type)
   end
-
 end

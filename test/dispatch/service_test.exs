@@ -24,13 +24,18 @@ defmodule Dispatch.ServiceTest do
 
   setup do
     type = "ServiceTest"
-    pubsub_server = Application.get_env(:dispatch, :pubsub)
-                      |> Keyword.get(:name, Dispatch.PubSub)
+
+    pubsub_server =
+      Application.get_env(:dispatch, :pubsub)
+      |> Keyword.get(:name, Dispatch.PubSub)
+
     Phoenix.PubSub.subscribe(pubsub_server, type)
     {:ok, _registry_pid} = Helper.setup_registry()
-    on_exit fn ->
+
+    on_exit(fn ->
       Helper.clear_type(type)
-    end
+    end)
+
     {:ok, %{service_type: type}}
   end
 
@@ -76,12 +81,13 @@ defmodule Dispatch.ServiceTest do
     assert_receive({:join, ^service2, %{node: ^this_node, state: :online}})
     assert_receive({:join, ^service3, %{node: ^this_node, state: :online}})
 
-    [{:ok, out_service1, out_res1}, {:ok, out_service2, out_res2}] = Service.multi_call(2, type, "my_key", {:get, "my_key"})
+    [{:ok, out_service1, out_res1}, {:ok, out_service2, out_res2}] =
+      Service.multi_call(2, type, "my_key", {:get, "my_key"})
+
     assert(out_res1 == {:ok, "my_key"})
     assert(out_res2 == {:ok, "my_key"})
     assert(Enum.member?([service1, service2, service3], out_service1))
     assert(Enum.member?([service1, service2, service3], out_service2))
     assert(out_service1 != out_service2)
   end
-
 end

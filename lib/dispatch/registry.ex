@@ -36,11 +36,16 @@ defmodule Dispatch.Registry do
       {:ok, #PID<0.168.0>}
   """
   def start_link(opts \\ []) do
-    pubsub_server = Application.get_env(:dispatch, :pubsub)
-                      |> Keyword.get(:name, Dispatch.PubSub)
-    full_opts = Keyword.merge([name: __MODULE__,
-                          pubsub_server: pubsub_server],
-                         opts)
+    pubsub_server =
+      Application.get_env(:dispatch, :pubsub)
+      |> Keyword.get(:name, Dispatch.PubSub)
+
+    full_opts =
+      Keyword.merge(
+        [name: __MODULE__, pubsub_server: pubsub_server],
+        opts
+      )
+
     GenServer.start_link(Phoenix.Tracker, [__MODULE__, full_opts, full_opts], opts)
   end
 
@@ -133,8 +138,8 @@ defmodule Dispatch.Registry do
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
   """
   def get_online_services(type) do
-      get_services(type)
-      |> Enum.filter(&(elem(&1, 1)[:state] == :online))
+    get_services(type)
+    |> Enum.filter(&(elem(&1, 1)[:state] == :online))
   end
 
   @doc """
@@ -149,9 +154,11 @@ defmodule Dispatch.Registry do
       {:ok, :"slave1@127.0.0.1", #PID<0.153.0>}
   """
   def find_service(type, key) do
-    with(%HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
-         {:ok, service_info} <- HashRing.key_to_node(hash_ring, key),
-              do: service_info)
+    with(
+      %HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
+      {:ok, service_info} <- HashRing.key_to_node(hash_ring, key),
+      do: service_info
+    )
     |> case do
       {host, pid} when is_pid(pid) -> {:ok, host, pid}
       _ -> {:error, :no_service_for_key}
@@ -171,15 +178,16 @@ defmodule Dispatch.Registry do
       [{:ok, :"slave1@127.0.0.1", #PID<0.153.0>}, {:ok, :"slave2@127.0.0.1", #PID<0.145.0>}]
   """
   def find_multi_service(count, type, key) do
-    with(%HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
-         {:ok, service_info} <- HashRing.key_to_nodes(hash_ring, key, count),
-      do: service_info)
+    with(
+      %HashRing{} = hash_ring <- GenServer.call(hash_ring_server(), {:get, type}),
+      {:ok, service_info} <- HashRing.key_to_nodes(hash_ring, key, count),
+      do: service_info
+    )
     |> case do
       list when is_list(list) -> list
       _ -> []
     end
   end
-
 
   @doc false
   def init(opts) do
@@ -190,6 +198,7 @@ defmodule Dispatch.Registry do
   @doc false
   def handle_diff(diff, state) do
     hash_rings = GenServer.call(hash_ring_server(), :get_all)
+
     hash_rings =
       Enum.reduce(diff, hash_rings, fn {type, _} = event, hash_rings ->
         hash_ring =
@@ -208,10 +217,14 @@ defmodule Dispatch.Registry do
   defp remove_leaves(hash_ring, {type, {joins, leaves}}, state) do
     Enum.reduce(leaves, hash_ring, fn {pid, meta}, acc ->
       service_info = {meta.node, pid}
-      any_joins = Enum.any?(joins, fn({jpid, %{state: meta_state}}) ->
-        jpid == pid && meta_state == :online
-      end)
+
+      any_joins =
+        Enum.any?(joins, fn {jpid, %{state: meta_state}} ->
+          jpid == pid && meta_state == :online
+        end)
+
       Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:leave, pid, meta})
+
       case any_joins do
         true -> acc
         _ -> HashRing.remove_node(acc, service_info)
@@ -223,10 +236,13 @@ defmodule Dispatch.Registry do
     Enum.reduce(joins, hash_ring, fn {pid, meta}, acc ->
       service_info = {meta.node, pid}
       Phoenix.PubSub.direct_broadcast(node(), state.pubsub_server, type, {:join, pid, meta})
+
       case meta.state do
         :online ->
           HashRing.add_node(acc, service_info)
-        _ -> acc
+
+        _ ->
+          acc
       end
     end)
   end

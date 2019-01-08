@@ -17,7 +17,7 @@ defmodule Dispatch.HashRingServer do
   end
 
   def handle_call(:get_all, _reply, state) do
-     {:reply, state.hash_rings, state}
+    {:reply, state.hash_rings, state}
   end
 
   def handle_call({:put_all, hash_rings}, _reply, state) do

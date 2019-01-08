@@ -4,23 +4,24 @@ defmodule Dispatch.Mixfile do
   @version "0.2.0"
 
   def project do
-    [app: :dispatch,
-     version: @version,
-     elixir: "~> 1.3",
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     source_url: "https://github.com/VoiceLayer/dispatch",
-     description: description(),
-     package: package(),
-     deps: deps(),
-     docs: [extras: ["README.md"]]]
+    [
+      app: :dispatch,
+      version: @version,
+      elixir: "~> 1.3",
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
+      source_url: "https://github.com/VoiceLayer/dispatch",
+      description: description(),
+      package: package(),
+      deps: deps(),
+      docs: [extras: ["README.md"]]
+    ]
   end
 
   # Configuration for the OTP application
   #
   def application do
-    [applications: [:logger, :phoenix_pubsub, :libring],
-      mod: {Dispatch, []}]
+    [applications: [:logger, :phoenix_pubsub, :libring], mod: {Dispatch, []}]
   end
 
   # Dependencies can be Hex packages:
@@ -41,11 +42,14 @@ defmodule Dispatch.Mixfile do
   end
 
   defp package do
-    [files: ~w(lib test mix.exs README.md LICENSE.md),
-     maintainers: ["Gary Rennie", "Gabi Zuniga"],
-     licenses: ["MIT"],
-     links: %{"GitHub" => "https://github.com/voicelayer/dispatch",
-              "Docs" => "http://hexdocs.pm/dispatch"}]
+    [
+      files: ~w(lib test mix.exs README.md LICENSE.md),
+      maintainers: ["Gary Rennie", "Gabi Zuniga"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/voicelayer/dispatch",
+        "Docs" => "http://hexdocs.pm/dispatch"
+      }
+    ]
   end
-
 end

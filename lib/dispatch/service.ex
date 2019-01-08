@@ -1,9 +1,9 @@
 defmodule Dispatch.Service do
-
   alias Dispatch.Registry
 
   def init(opts) do
     type = Keyword.fetch!(opts, :type)
+
     case Registry.add_service(type, self()) do
       {:ok, _} -> :ok
       other -> other
@@ -26,19 +26,24 @@ defmodule Dispatch.Service do
 
   def multi_cast(count, type, key, params) do
     case Registry.find_multi_service(count, type, key) do
-      [] -> {:error, :service_unavailable}
+      [] ->
+        {:error, :service_unavailable}
+
       servers ->
         servers
-        |> Enum.each(fn ({_node, pid}) ->
+        |> Enum.each(fn {_node, pid} ->
           GenServer.cast(pid, params)
         end)
+
         {:ok, Enum.count(servers)}
     end
   end
 
   def multi_call(count, type, key, params, timeout \\ 5000) do
     case Registry.find_multi_service(count, type, key) do
-      [] -> {:error, :service_unavailable}
+      [] ->
+        {:error, :service_unavailable}
+
       servers ->
         for {_node, pid} <- servers do
           Task.Supervisor.async_nolink(TaskSupervisor, fn ->
@@ -48,9 +53,8 @@ defmodule Dispatch.Service do
               :exit, reason -> {:error, pid, reason}
             end
           end)
-      end
-      |> Enum.map(&Task.await(&1, :infinity))
+        end
+        |> Enum.map(&Task.await(&1, :infinity))
     end
   end
-
 end
