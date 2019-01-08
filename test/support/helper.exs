@@ -4,10 +4,16 @@ defmodule Dispatch.Helper do
 
   @rtype "TestDispatchType"
 
-  def setup_registry() do
-    if Process.whereis(Registry), do: Process.unregister(Registry)
-    if Process.whereis(Registry.HashRing), do: Process.unregister(Registry.HashRing)
+  def setup_pubsub() do
+    pubsub = Application.get_env(:dispatch, :pubsub, [])
 
+    Phoenix.PubSub.PG2.start_link(
+      pubsub[:name] || Phoenix.PubSub.Test.PubSub,
+      pubsub[:opts] || []
+    )
+  end
+
+  def setup_registry() do
     {:ok, registry_pid} =
       Registry.start_link(
         broadcast_period: 5_000,
@@ -21,12 +27,10 @@ defmodule Dispatch.Helper do
 
   def clear_type(_type) do
     if old_pid = Process.whereis(Registry) do
-      Process.exit(old_pid, :kill)
+      Supervisor.stop(old_pid)
     end
-
-    if old_pid = Process.whereis(Registry.HashRing) do
-      Process.exit(old_pid, :kill)
-    end
+  catch
+    :exit, _ -> nil
   end
 
   def wait_dispatch_ready(node \\ nil) do

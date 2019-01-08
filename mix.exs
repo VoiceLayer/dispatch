@@ -12,6 +12,7 @@ defmodule Dispatch.Mixfile do
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/VoiceLayer/dispatch",
       description: description(),
+      aliases: aliases(),
       package: package(),
       deps: deps(),
       docs: [extras: ["README.md"]]
@@ -29,7 +30,7 @@ defmodule Dispatch.Mixfile do
   defp deps do
     [
       {:libring, "~> 1.3.0"},
-      {:phoenix_pubsub, "~> 1.0.0"},
+      {:phoenix_pubsub, "~>1.0.0 or ~> 1.1.0"},
       {:ex_doc, "~> 0.13.0", only: :dev}
     ]
   end
@@ -51,5 +52,9 @@ defmodule Dispatch.Mixfile do
         "Docs" => "http://hexdocs.pm/dispatch"
       }
     ]
+  end
+
+  defp aliases do
+    [test: "test --no-start"]
   end
 end

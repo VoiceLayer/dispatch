@@ -26,7 +26,6 @@ defmodule Dispatch.RegistryTest do
   test "empty registry returns empty service list with a different type", %{service_type: type} do
     Registry.add_service("Other", self())
     assert [] == Registry.get_services(type)
-    Helper.clear_type("Other")
   end
 
   test "enable service adds to registry", %{service_type: type} do
