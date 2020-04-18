@@ -6,8 +6,7 @@ defmodule Dispatch.Registry do
   registry of services. Services can be added and removed to and from the
   registry.
 
-  Services are identified by their type. The type can be any valid Elixir term,
-  such as an atom or string.
+  Services are identified by their type. The type must be a binary.
 
   When a node goes down, all associated services will be removed from the
   registry when the CRDT syncs.
@@ -36,9 +35,7 @@ defmodule Dispatch.Registry do
       {:ok, #PID<0.168.0>}
   """
   def start_link(opts \\ []) do
-    pubsub_server =
-      Application.get_env(:dispatch, :pubsub)
-      |> Keyword.get(:name, Dispatch.PubSub)
+    pubsub_server = Keyword.get(opts, :dispatch_name, Dispatch.PubSub)
 
     full_opts =
       Keyword.merge(
@@ -52,12 +49,12 @@ defmodule Dispatch.Registry do
   @doc """
   Add a service to the registry. The service is set as online.
 
-    * `type` - The type of the service. Can be any elixir term
+    * `type` - The type of the service. Must be a binary.
     * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.add_service(:downloader, self())
+      iex> Dispatch.Registry.add_service("downloader", self())
       {:ok, "g20AAAAIlB7XfDdRhmk="}
   """
   def add_service(type, pid) do
@@ -67,12 +64,12 @@ defmodule Dispatch.Registry do
   @doc """
   Set a service as online. When a service is online it can be used.
 
-  * `type` - The type of the service. Can be any elixir term
+  * `type` - The type of the service. Must be a binary.
   * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.enable_service(:downloader, self())
+      iex> Dispatch.Registry.enable_service("downloader", self())
       {:ok, "g20AAAAI9+IQ28ngDfM="}
   """
   def enable_service(type, pid) do
@@ -82,12 +79,12 @@ defmodule Dispatch.Registry do
   @doc """
   Set a service as offline. When a service is offline it can't be used.
 
-  * `type` - The type of the service. Can be any elixir term
+  * `type` - The type of the service. Must be a binary.
   * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.disable_service(:downloader, self())
+      iex> Dispatch.Registry.disable_service("downloader", self())
       {:ok, "g20AAAAI4oU3ICYcsoQ="}
   """
   def disable_service(type, pid) do
@@ -97,12 +94,12 @@ defmodule Dispatch.Registry do
   @doc """
   Remove a service from the registry.
 
-  * `type` - The type of the service. Can be any elixir term
+  * `type` - The type of the service. Must be a binary.
   * `pid` - The pid that provides the service
 
   ## Examples
 
-      iex> Dispatch.Registry.remove_service(:downloader, self())
+      iex> Dispatch.Registry.remove_service("downloader", self())
       {:ok, "g20AAAAI4oU3ICYcsoQ="}
   """
   def remove_service(type, pid) do
@@ -112,11 +109,11 @@ defmodule Dispatch.Registry do
   @doc """
   List all of the services for a particular type.
 
-  * `type` - The type of the service. Can be any elixir term
+  * `type` - The type of the service. Must be a binary.
 
   ## Examples
 
-      iex> Dispatch.Registry.get_services(:downloader)
+      iex> Dispatch.Registry.get_services("downloader")
       [{#PID<0.166.0>,
         %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
@@ -128,11 +125,11 @@ defmodule Dispatch.Registry do
   @doc """
   List all of the services that are online for a particular type.
 
-  * `type` - The type of the service. Can be any elixir term
+  * `type` - The type of the service. Must be a binary.
 
   ## Examples
 
-      iex> Dispatch.Registry.get_online_services(:downloader)
+      iex> Dispatch.Registry.get_online_services("downloader")
       [{#PID<0.166.0>,
         %{node: :"slave2@127.0.0.1", phx_ref: "g20AAAAIHAHuxydO084=",
         phx_ref_prev: "g20AAAAI4oU3ICYcsoQ=", state: :online}}]
@@ -145,7 +142,7 @@ defmodule Dispatch.Registry do
   @doc """
   Find a service to use for a particular `key`
 
-  * `type` - The type of service to retrieve
+  * `type` - The type of the service. Must be a binary.
   * `key` - The key to lookup the service. Can be any elixir term
 
   ## Examples

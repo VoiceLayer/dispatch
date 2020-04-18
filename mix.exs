@@ -7,7 +7,7 @@ defmodule Dispatch.Mixfile do
     [
       app: :dispatch,
       version: @version,
-      elixir: "~> 1.3",
+      elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/VoiceLayer/dispatch",
@@ -30,7 +30,7 @@ defmodule Dispatch.Mixfile do
   defp deps do
     [
       {:libring, "~> 1.3.0"},
-      {:phoenix_pubsub, "~>1.0.0 or ~> 1.1.0"},
+      {:phoenix_pubsub, "~> 2.0"},
       {:ex_doc, "~> 0.13.0", only: :dev}
     ]
   end
