@@ -46,7 +46,7 @@ defmodule Dispatch.Service do
 
       servers ->
         for {_node, pid} <- servers do
-          Task.Supervisor.async_nolink(TaskSupervisor, fn ->
+          Task.Supervisor.async_nolink(Dispatch.TaskSupervisor, fn ->
             try do
               {:ok, pid, GenServer.call(pid, params, timeout)}
             catch

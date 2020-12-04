@@ -1,4 +1,5 @@
 defmodule Dispatch.HashRingServer do
+  use GenServer
   @moduledoc false
 
   def start_link(opts \\ []) do

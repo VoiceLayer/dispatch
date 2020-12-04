@@ -1,4 +1,6 @@
 defmodule Dispatch.Registry do
+  use Phoenix.Tracker
+
   @moduledoc """
   Provides a distributes registry for services.
 
@@ -23,8 +25,6 @@ defmodule Dispatch.Registry do
       with `Dispatch.Registry.start_link/1` and
       `Dispatch.Supervisor.start_hash_ring/2`. Defaults to `false`
   """
-
-  @behaviour Phoenix.Tracker
 
   @doc """
   Start a new registry. The `pubsub` config value from `Dispatch` will be used.

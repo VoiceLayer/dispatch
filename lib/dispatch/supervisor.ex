@@ -15,14 +15,13 @@ defmodule Dispatch.Supervisor do
       |> Keyword.put_new(:name, Dispatch.Registry)
       |> Keyword.put_new(:dispatch_name, Keyword.fetch!(opts, :name))
 
-
     children = [
-      supervisor(Phoenix.PubSub.Supervisor, [opts]),
-      worker(Dispatch.Registry, [registry]),
-      worker(Dispatch.HashRingServer, [registry]),
-      supervisor(Task.Supervisor, [[name: TaskSupervisor]])
+      {Phoenix.PubSub.Supervisor, opts},
+      {Dispatch.Registry, registry},
+      {Dispatch.HashRingServer, registry},
+      {Task.Supervisor, [name: Dispatch.TaskSupervisor]}
     ]
 
-    supervise(children, strategy: :rest_for_one)
+    Supervisor.init(children, strategy: :rest_for_one)
   end
 end
