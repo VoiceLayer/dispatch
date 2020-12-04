@@ -31,7 +31,7 @@ defmodule Dispatch.Mixfile do
     [
       {:libring, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 2.0"},
-      {:ex_doc, "~> 0.13.0", only: :dev}
+      {:ex_doc, "~> 0.21.3", only: :dev}
     ]
   end
 
